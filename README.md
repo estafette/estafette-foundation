@@ -31,7 +31,7 @@ go mod vendor
 
 To add this module to your golang application run
 
-```
+```bash
 go get github.com/estafette/estafette-foundation
 ```
 
@@ -40,7 +40,6 @@ go get github.com/estafette/estafette-foundation
 ```go
 import "github.com/estafette/estafette-foundation"
 
-
 foundation.InitLogging(app, version, branch, revision, buildDate)
 ```
 
@@ -48,7 +47,6 @@ foundation.InitLogging(app, version, branch, revision, buildDate)
 
 ```go
 import "github.com/estafette/estafette-foundation"
-
 
 foundation.InitMetrics()
 ```

@@ -2,7 +2,6 @@ builder:
   track: dev
 
 labels:
-  app: estafette-foundation
   team: estafette-team
   language: golang
 
