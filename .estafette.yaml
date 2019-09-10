@@ -16,7 +16,6 @@ stages:
     env:
       CGO_ENABLED: 0
       GOOS: linux
-      GOFLAGS: -mod=vendor
     commands:
     - go test ./...
 
