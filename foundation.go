@@ -29,14 +29,44 @@ var (
 
 // InitLogging initializes logging to log everything as json
 func InitLogging(app, version, branch, revision, buildDate string) {
-	// log as severity for stackdriver logging to recognize the level
-	zerolog.LevelFieldName = "severity"
+
+	zerolog.TimeFieldFormat = "2006-01-02T15:04:05.999Z"
+	zerolog.TimestampFieldName = "timestamp"
+	zerolog.LevelFieldName = "loglevel"
+
+	zerolog.LevelFieldMarshalFunc = func(l zerolog.Level) string {
+		switch l {
+		case zerolog.DebugLevel:
+			return "DEBUG"
+		case zerolog.InfoLevel:
+			return "INFO"
+		case zerolog.WarnLevel:
+			return "WARN"
+		case zerolog.ErrorLevel:
+			return "ERROR"
+		case zerolog.FatalLevel:
+			return "FATAL"
+		case zerolog.PanicLevel:
+			return "PANIC"
+		case zerolog.NoLevel:
+			return ""
+		}
+		return ""
+	}
+
+	source := struct {
+		appname    string
+		appversion string
+	}{
+		app,
+		version,
+	}
 
 	// set some default fields added to all logs
 	log.Logger = zerolog.New(os.Stdout).With().
 		Timestamp().
-		Str("app", app).
-		Str("version", version).
+		Str("logformat", "v3").
+		Interface("source", source).
 		Logger()
 
 	// use zerolog for any logs sent via standard log library
