@@ -75,6 +75,8 @@ func InitLogging(appgroup, app, version, branch, revision, buildDate string) {
 	log.Logger = zerolog.New(os.Stdout).With().
 		Timestamp().
 		Str("logformat", "v3").
+		Str("messagetype", "estafette").
+		Str("messagetypeversion", "0.0.0").
 		Interface("source", source).
 		Logger()
 
