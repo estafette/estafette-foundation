@@ -28,7 +28,7 @@ var (
 )
 
 // InitLogging initializes logging to log everything as json
-func InitLogging(app, version, branch, revision, buildDate string) {
+func InitLogging(appgroup, app, version, branch, revision, buildDate string) {
 
 	zerolog.TimeFieldFormat = "2006-01-02T15:04:05.999Z"
 	zerolog.TimestampFieldName = "timestamp"
@@ -54,12 +54,21 @@ func InitLogging(app, version, branch, revision, buildDate string) {
 		return ""
 	}
 
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+
 	source := struct {
-		AppName    string `json:"appname,omitempty"`
-		AppVersion string `json:"appversion,omitempty"`
+		AppGroup   string `json:"appgroup"`
+		AppName    string `json:"appname"`
+		AppVersion string `json:"appversion"`
+		Hostname   string `json:"hostname"`
 	}{
+		appgroup,
 		app,
 		version,
+		hostname,
 	}
 
 	// set some default fields added to all logs
