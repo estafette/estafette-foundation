@@ -55,8 +55,8 @@ func InitLogging(app, version, branch, revision, buildDate string) {
 	}
 
 	source := struct {
-		appname    string
-		appversion string
+		AppName    string `json:"appname,omitempty"`
+		AppVersion string `json:"appversion,omitempty"`
 	}{
 		app,
 		version,
