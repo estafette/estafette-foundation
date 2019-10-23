@@ -28,7 +28,7 @@ var (
 )
 
 // InitLogging initializes logging to log everything as json
-func InitLogging(appgroup, app, version, branch, revision, buildDate string) {
+func InitLogging(appgroup, app, version, branch, revision, buildDate string, pretty bool) {
 
 	zerolog.TimeFieldFormat = "2006-01-02T15:04:05.999Z"
 	zerolog.TimestampFieldName = "timestamp"
@@ -71,14 +71,21 @@ func InitLogging(appgroup, app, version, branch, revision, buildDate string) {
 		hostname,
 	}
 
-	// set some default fields added to all logs
-	log.Logger = zerolog.New(os.Stdout).With().
-		Timestamp().
-		Str("logformat", "v3").
-		Str("messagetype", "estafette").
-		Str("messagetypeversion", "0.0.0").
-		Interface("source", source).
-		Logger()
+	if pretty {
+		// for pretty print use the consolewriter
+		log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02T15:04:05.999Z"}).With().
+			Timestamp().
+			Logger()
+	} else {
+		// set some default fields added to all logs
+		log.Logger = zerolog.New(os.Stdout).With().
+			Timestamp().
+			Str("logformat", "v3").
+			Str("messagetype", "estafette").
+			Str("messagetypeversion", "0.0.0").
+			Interface("source", source).
+			Logger()
+	}
 
 	// use zerolog for any logs sent via standard log library
 	stdlog.SetFlags(0)
@@ -90,7 +97,8 @@ func InitLogging(appgroup, app, version, branch, revision, buildDate string) {
 		Str("revision", revision).
 		Str("buildDate", buildDate).
 		Str("goVersion", goVersion).
-		Msgf("Starting %v...", app)
+		Str("os", runtime.GOOS).
+		Msgf("Starting %v version %v...", app, version)
 }
 
 // InitMetrics initializes the prometheus endpoint /metrics on port 9101
