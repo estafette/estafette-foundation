@@ -73,8 +73,11 @@ func InitLogging(appgroup, app, version, branch, revision, buildDate string, pre
 
 	if pretty {
 		// for pretty print use the consolewriter
-		log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02T15:04:05.999Z"}).With().
-			Timestamp().
+		output := zerolog.ConsoleWriter{Out: os.Stderr}
+		output.FormatLevel = func(i interface{}) string {
+			return ""
+		}
+		log.Logger = zerolog.New(output).With().
 			Logger()
 	} else {
 		// set some default fields added to all logs
