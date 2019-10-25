@@ -28,7 +28,7 @@ var (
 )
 
 // InitLogging initializes logging to log everything as json
-func InitLogging(appgroup, app, version, branch, revision, buildDate string, pretty bool) {
+func InitLogging(appgroup, app, version, branch, revision, buildDate string) {
 
 	zerolog.TimeFieldFormat = "2006-01-02T15:04:05.999Z"
 	zerolog.TimestampFieldName = "timestamp"
@@ -71,24 +71,14 @@ func InitLogging(appgroup, app, version, branch, revision, buildDate string, pre
 		hostname,
 	}
 
-	if pretty {
-		// for pretty print use the consolewriter
-		output := zerolog.ConsoleWriter{Out: os.Stderr}
-		output.FormatLevel = func(i interface{}) string {
-			return ""
-		}
-		log.Logger = zerolog.New(output).With().
-			Logger()
-	} else {
-		// set some default fields added to all logs
-		log.Logger = zerolog.New(os.Stdout).With().
-			Timestamp().
-			Str("logformat", "v3").
-			Str("messagetype", "estafette").
-			Str("messagetypeversion", "0.0.0").
-			Interface("source", source).
-			Logger()
-	}
+	// set some default fields added to all logs
+	log.Logger = zerolog.New(os.Stdout).With().
+		Timestamp().
+		Str("logformat", "v3").
+		Str("messagetype", "estafette").
+		Str("messagetypeversion", "0.0.0").
+		Interface("source", source).
+		Logger()
 
 	// use zerolog for any logs sent via standard log library
 	stdlog.SetFlags(0)
