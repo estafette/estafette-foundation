@@ -6,9 +6,11 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -92,6 +94,79 @@ func InitLogging(appgroup, app, version, branch, revision, buildDate string) {
 		Str("goVersion", goVersion).
 		Str("os", runtime.GOOS).
 		Msgf("Starting %v version %v...", app, version)
+}
+
+// InitExtensionLogging initializes logging to write to stdout in plain text for use by Estafette CI extensions
+func InitExtensionLogging(appgroup, app, version, branch, revision, buildDate string) {
+
+	output := zerolog.ConsoleWriter{
+		Out: os.Stdout,
+		PartsOrder: []string{
+			zerolog.LevelFieldName,
+			zerolog.MessageFieldName,
+		},
+	}
+	output.FormatLevel = func(i interface{}) string {
+		if ll, ok := i.(string); ok {
+			switch ll {
+			case "debug":
+				return colorizeStart(colorizeGray)
+			case "info":
+				return colorizeStart(colorizeBold)
+			case "warn",
+				"error",
+				"fatal",
+				"panic":
+			default:
+			}
+		}
+		return colorizeStart(colorizeReset)
+	}
+	output.FormatMessage = func(i interface{}) string {
+		return fmt.Sprintf("%s%s", i, colorizeEnd())
+	}
+
+	log.Logger = zerolog.New(output).With().Logger()
+
+	// use zerolog for any logs sent via standard log library
+	stdlog.SetFlags(0)
+	stdlog.SetOutput(log.Logger)
+
+	// log startup message
+	log.Info().
+		Str("branch", branch).
+		Str("revision", revision).
+		Str("buildDate", buildDate).
+		Str("goVersion", goVersion).
+		Str("os", runtime.GOOS).
+		Msgf("Starting %v version %v...", app, version)
+}
+
+type colorizeFormat int
+
+const (
+	colorizeWhite colorizeFormat = 0
+	colorizeGray  colorizeFormat = 1
+	colorizeBold  colorizeFormat = 2
+	colorizeReset colorizeFormat = 3
+)
+
+func colorizeStart(c colorizeFormat) string {
+
+	switch c {
+	case colorizeWhite:
+		return "\x1b[37m"
+	case colorizeGray:
+		return "\x1b[38;5;250m"
+	case colorizeBold:
+		return "\x1b[1m"
+	}
+
+	return "\x1b[0m"
+}
+
+func colorizeEnd() string {
+	return fmt.Sprintf("\x1b[0m")
 }
 
 // InitMetrics initializes the prometheus endpoint /metrics on port 9101
@@ -212,4 +287,76 @@ func WatchForFileChanges(filePath string, functionOnChange func(fsnotify.Event))
 		eventsWG.Wait() // now, wait for event loop to end in this go-routine...
 	}()
 	initWG.Wait() // make sure that the go routine above fully ended before returning
+}
+
+// HandleError logs a fatal when the error is not nil
+func HandleError(err error) {
+	if err != nil {
+		log.Fatal().Err(err)
+	}
+}
+
+// RunCommand runs a full command string and replaces placeholders with the arguments; it logs a fatal on error
+// RunCommand("kubectl logs -l app=%v -n %v", app, namespace)
+func RunCommand(command string, args ...interface{}) {
+	err := RunCommandExtended(command, args...)
+	HandleError(err)
+}
+
+// RunCommandExtended runs a full command string and replaces placeholders with the arguments; it returns an error if command execution failed
+// err := RunCommandExtended("kubectl logs -l app=%v -n %v", app, namespace)
+func RunCommandExtended(command string, args ...interface{}) error {
+	command = fmt.Sprintf(command, args...)
+	log.Debug().Msgf("> %v", command)
+
+	// trim spaces and de-dupe spaces in string
+	command = strings.ReplaceAll(command, "  ", " ")
+	command = strings.Trim(command, " ")
+
+	// split into actual command and arguments
+	commandArray := strings.Split(command, " ")
+	var c string
+	var a []string
+	if len(commandArray) > 0 {
+		c = commandArray[0]
+	}
+	if len(commandArray) > 1 {
+		a = commandArray[1:]
+	}
+
+	cmd := exec.Command(c, a...)
+	cmd.Env = os.Environ()
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	return err
+}
+
+// RunCommandWithArgs runs a single command and passes the arguments; it logs a fatal on error
+// RunCommandWithArgs("kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
+func RunCommandWithArgs(command string, args []string) {
+	err := RunCommandWithArgsExtended(command, args)
+	HandleError(err)
+}
+
+// RunCommandWithArgsExtended runs a single command and passes the arguments; it returns an error if command execution failed
+// err := RunCommandWithArgsExtended("kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
+func RunCommandWithArgsExtended(command string, args []string) error {
+	log.Debug().Msgf("> %v %v", command, strings.Join(args, " "))
+
+	cmd := exec.Command(command, args...)
+	cmd.Env = os.Environ()
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	return err
+}
+
+// FileExists checks if a file exists
+func FileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }
