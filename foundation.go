@@ -118,6 +118,12 @@ func InitConsoleLogging(appgroup, app, version, branch, revision, buildDate stri
 			zerolog.MessageFieldName,
 		},
 	}
+	output.FormatTimestamp = func(i interface{}) string {
+		return ""
+	}
+	output.FormatCaller = func(i interface{}) string {
+		return ""
+	}
 	output.FormatLevel = func(i interface{}) string {
 		if ll, ok := i.(string); ok {
 			switch ll {
