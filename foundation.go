@@ -29,8 +29,8 @@ var (
 	r = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
-// InitLogging initializes logging to log everything as json
-func InitLogging(appgroup, app, version, branch, revision, buildDate string) {
+// InitV3Logging initializes logging to log everything as json in v3 log format
+func InitV3Logging(appgroup, app, version, branch, revision, buildDate string) {
 
 	zerolog.TimeFieldFormat = "2006-01-02T15:04:05.999Z"
 	zerolog.TimestampFieldName = "timestamp"
@@ -86,18 +86,30 @@ func InitLogging(appgroup, app, version, branch, revision, buildDate string) {
 	stdlog.SetFlags(0)
 	stdlog.SetOutput(log.Logger)
 
-	// log startup message
-	log.Info().
-		Str("branch", branch).
-		Str("revision", revision).
-		Str("buildDate", buildDate).
-		Str("goVersion", goVersion).
-		Str("os", runtime.GOOS).
-		Msgf("Starting %v version %v...", app, version)
+	LogStartupMessage(appgroup, app, version, branch, revision, buildDate)
 }
 
-// InitExtensionLogging initializes logging to write to stdout in plain text for use by Estafette CI extensions
-func InitExtensionLogging(appgroup, app, version, branch, revision, buildDate string) {
+// InitStackdriverLogging initializes logging to log everything as json optimized for Stackdriver logging
+func InitStackdriverLogging(appgroup, app, version, branch, revision, buildDate string) {
+
+	zerolog.TimeFieldFormat = "2006-01-02T15:04:05.999Z"
+	zerolog.TimestampFieldName = "timestamp"
+	zerolog.LevelFieldName = "severity"
+
+	// set some default fields added to all logs
+	log.Logger = zerolog.New(os.Stdout).With().
+		Timestamp().
+		Logger()
+
+	// use zerolog for any logs sent via standard log library
+	stdlog.SetFlags(0)
+	stdlog.SetOutput(log.Logger)
+
+	LogStartupMessage(appgroup, app, version, branch, revision, buildDate)
+}
+
+// InitConsoleLogging initializes a console logger for use by Estafette CI extensions
+func InitConsoleLogging(appgroup, app, version, branch, revision, buildDate string) {
 
 	output := zerolog.ConsoleWriter{
 		Out: os.Stdout,
@@ -132,7 +144,11 @@ func InitExtensionLogging(appgroup, app, version, branch, revision, buildDate st
 	stdlog.SetFlags(0)
 	stdlog.SetOutput(log.Logger)
 
-	// log startup message
+	LogStartupMessage(appgroup, app, version, branch, revision, buildDate)
+}
+
+// LogStartupMessage logs a default startup message for any Estafette application
+func LogStartupMessage(appgroup, app, version, branch, revision, buildDate string) {
 	log.Info().
 		Str("branch", branch).
 		Str("revision", revision).
