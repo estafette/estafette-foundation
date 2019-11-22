@@ -144,9 +144,8 @@ func InitConsoleLogging(appgroup, app, version, branch, revision, buildDate stri
 			switch ll {
 			case "debug":
 				return colorizeStart(colorizeGray)
-			case "info":
-				return colorizeStart(colorizeBold)
-			case "warn",
+			case "info",
+				"warn",
 				"error",
 				"fatal",
 				"panic":
