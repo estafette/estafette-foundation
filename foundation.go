@@ -108,6 +108,21 @@ func InitStackdriverLogging(appgroup, app, version, branch, revision, buildDate 
 	LogStartupMessage(appgroup, app, version, branch, revision, buildDate)
 }
 
+// InitJSONLogging initializes logging to log everything as relatively flat json
+func InitJSONLogging(appgroup, app, version, branch, revision, buildDate string) {
+
+	// set some default fields added to all logs
+	log.Logger = zerolog.New(os.Stdout).With().
+		Timestamp().
+		Logger()
+
+	// use zerolog for any logs sent via standard log library
+	stdlog.SetFlags(0)
+	stdlog.SetOutput(log.Logger)
+
+	LogStartupMessage(appgroup, app, version, branch, revision, buildDate)
+}
+
 // InitConsoleLogging initializes a console logger for use by Estafette CI extensions
 func InitConsoleLogging(appgroup, app, version, branch, revision, buildDate string) {
 
