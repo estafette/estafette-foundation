@@ -34,10 +34,6 @@ var (
 	r = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	sequenceID uint64 = 0
-
-	v3ErrorMarshalFunc = func(err error) interface{} {
-		return v3Error{"narancs"}
-	}
 )
 
 type messageIDHook struct{}
@@ -101,7 +97,9 @@ func InitV3Logging(appgroup, app, version, branch, revision, buildDate string) {
 		Logger()
 
 	// Have the error message under and object in "error" instead of in a raw string.
-	zerolog.ErrorMarshalFunc = v3ErrorMarshalFunc
+	zerolog.ErrorMarshalFunc = func(err error) interface{} {
+		return v3Error{err.Error()}
+	}
 
 	// use zerolog for any logs sent via standard log library
 	stdlog.SetFlags(0)
