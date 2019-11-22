@@ -12,22 +12,40 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+type v3Error struct {
+	Message string `json:"message"`
+}
 
 var (
 	goVersion = runtime.Version()
 
 	// seed random number
 	r = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	sequenceID uint64 = 0
+
+	v3ErrorMarshalFunc = func(err error) interface{} {
+		return v3Error{"narancs"}
+	}
 )
+
+type messageIDHook struct{}
+
+func (h messageIDHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
+	e.Str("messageuniqueid", uuid.New().String())
+	e.Uint64("sequenceid", atomic.AddUint64(&sequenceID, 1))
+}
 
 // InitV3Logging initializes logging to log everything as json in v3 log format
 func InitV3Logging(appgroup, app, version, branch, revision, buildDate string) {
@@ -74,13 +92,16 @@ func InitV3Logging(appgroup, app, version, branch, revision, buildDate string) {
 	}
 
 	// set some default fields added to all logs
-	log.Logger = zerolog.New(os.Stdout).With().
+	log.Logger = zerolog.New(os.Stdout).Hook(messageIDHook{}).With().
 		Timestamp().
 		Str("logformat", "v3").
 		Str("messagetype", "estafette").
 		Str("messagetypeversion", "0.0.0").
 		Interface("source", source).
 		Logger()
+
+	// Have the error message under and object in "error" instead of in a raw string.
+	zerolog.ErrorMarshalFunc = v3ErrorMarshalFunc
 
 	// use zerolog for any logs sent via standard log library
 	stdlog.SetFlags(0)
@@ -155,12 +176,22 @@ func InitConsoleLogging(appgroup, app, version, branch, revision, buildDate stri
 
 // LogStartupMessage logs a default startup message for any Estafette application
 func LogStartupMessage(appgroup, app, version, branch, revision, buildDate string) {
+	startupProps := struct {
+		Branch    string `json:"branch"`
+		Revision  string `json:"revision"`
+		BuildDate string `json:"buildDate"`
+		GoVersion string `json:"goVersion"`
+		Os        string `json:"os"`
+	}{
+		branch,
+		revision,
+		buildDate,
+		goVersion,
+		runtime.GOOS,
+	}
+
 	log.Info().
-		Str("branch", branch).
-		Str("revision", revision).
-		Str("buildDate", buildDate).
-		Str("goVersion", goVersion).
-		Str("os", runtime.GOOS).
+		Interface("payload", startupProps).
 		Msgf("Starting %v version %v...", app, version)
 }
 
