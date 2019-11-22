@@ -105,7 +105,28 @@ func InitV3Logging(appgroup, app, version, branch, revision, buildDate string) {
 	stdlog.SetFlags(0)
 	stdlog.SetOutput(log.Logger)
 
-	LogStartupMessage(appgroup, app, version, branch, revision, buildDate)
+	LogStartupMessageV3(appgroup, app, version, branch, revision, buildDate)
+}
+
+// LogStartupMessageV3 logs a v3 startup message for any Estafette application
+func LogStartupMessageV3(appgroup, app, version, branch, revision, buildDate string) {
+	startupProps := struct {
+		Branch    string `json:"branch"`
+		Revision  string `json:"revision"`
+		BuildDate string `json:"buildDate"`
+		GoVersion string `json:"goVersion"`
+		Os        string `json:"os"`
+	}{
+		branch,
+		revision,
+		buildDate,
+		goVersion,
+		runtime.GOOS,
+	}
+
+	log.Info().
+		Interface("payload", startupProps).
+		Msgf("Starting %v version %v...", app, version)
 }
 
 // InitStackdriverLogging initializes logging to log everything as json optimized for Stackdriver logging
@@ -174,22 +195,12 @@ func InitConsoleLogging(appgroup, app, version, branch, revision, buildDate stri
 
 // LogStartupMessage logs a default startup message for any Estafette application
 func LogStartupMessage(appgroup, app, version, branch, revision, buildDate string) {
-	startupProps := struct {
-		Branch    string `json:"branch"`
-		Revision  string `json:"revision"`
-		BuildDate string `json:"buildDate"`
-		GoVersion string `json:"goVersion"`
-		Os        string `json:"os"`
-	}{
-		branch,
-		revision,
-		buildDate,
-		goVersion,
-		runtime.GOOS,
-	}
-
 	log.Info().
-		Interface("payload", startupProps).
+		Str("branch", branch).
+		Str("revision", revision).
+		Str("buildDate", buildDate).
+		Str("goVersion", goVersion).
+		Str("os", runtime.GOOS).
 		Msgf("Starting %v version %v...", app, version)
 }
 
