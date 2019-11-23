@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/google/uuid v1.1.1
+	github.com/logrusorgru/aurora v0.0.0-20191116043053-66b7ad493a23
 	github.com/prometheus/client_golang v0.9.2
 	github.com/prometheus/client_model v0.0.0-20190115171406-56726106282f // indirect
 	github.com/prometheus/common v0.2.0 // indirect

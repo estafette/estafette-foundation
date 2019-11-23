@@ -2,7 +2,6 @@ package foundation
 
 import (
 	"fmt"
-	stdlog "log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -12,237 +11,48 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"sync/atomic"
+
 	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
-
-type v3Error struct {
-	Message string `json:"message"`
-}
 
 var (
 	goVersion = runtime.Version()
 
 	// seed random number
 	r = rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	sequenceID uint64 = 0
 )
 
-type messageIDHook struct{}
-
-func (h messageIDHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
-	e.Str("messageuniqueid", uuid.New().String())
-	e.Uint64("sequenceid", atomic.AddUint64(&sequenceID, 1))
+// InitLoggingFromEnv initalializes a logger with format specified in envvar ESTAFETTE_LOG_FORMAT and outputs a startup message
+func InitLoggingFromEnv(appgroup, app, version, branch, revision, buildDate string) {
+	InitLoggingByFormat(appgroup, app, version, branch, revision, buildDate, os.Getenv("ESTAFETTE_LOG_FORMAT"))
 }
 
-// InitV3Logging initializes logging to log everything as json in v3 log format
-func InitV3Logging(appgroup, app, version, branch, revision, buildDate string) {
+// InitLoggingByFormat initalializes a logger with specified format and outputs a startup message
+func InitLoggingByFormat(appgroup, app, version, branch, revision, buildDate string, logFormat string) {
 
-	zerolog.TimeFieldFormat = "2006-01-02T15:04:05.999Z"
-	zerolog.TimestampFieldName = "timestamp"
-	zerolog.LevelFieldName = "loglevel"
-
-	zerolog.LevelFieldMarshalFunc = func(l zerolog.Level) string {
-		switch l {
-		case zerolog.DebugLevel:
-			return "DEBUG"
-		case zerolog.InfoLevel:
-			return "INFO"
-		case zerolog.WarnLevel:
-			return "WARN"
-		case zerolog.ErrorLevel:
-			return "ERROR"
-		case zerolog.FatalLevel:
-			return "FATAL"
-		case zerolog.PanicLevel:
-			return "PANIC"
-		case zerolog.NoLevel:
-			return ""
-		}
-		return ""
+	// configure logger and output startup message
+	switch logFormat {
+	case LogFormatJSON:
+		initLoggingJSON(appgroup, app, version, branch, revision, buildDate)
+		logStartupMessage(appgroup, app, version, branch, revision, buildDate)
+	case LogFormatStackdriver:
+		initLoggingStackdriver(appgroup, app, version, branch, revision, buildDate)
+		logStartupMessage(appgroup, app, version, branch, revision, buildDate)
+	case LogFormatV3:
+		initLoggingV3(appgroup, app, version, branch, revision, buildDate)
+		logStartupMessageV3(appgroup, app, version, branch, revision, buildDate)
+	case LogFormatConsole:
+		initLoggingConsole(appgroup, app, version, branch, revision, buildDate)
+		logStartupMessageConsole(appgroup, app, version, branch, revision, buildDate)
+	default: // LogFormatPlainText
+		initLoggingPlainText(appgroup, app, version, branch, revision, buildDate)
+		logStartupMessage(appgroup, app, version, branch, revision, buildDate)
 	}
-
-	hostname, err := os.Hostname()
-	if err != nil {
-		hostname = "unknown"
-	}
-
-	source := struct {
-		AppGroup   string `json:"appgroup"`
-		AppName    string `json:"appname"`
-		AppVersion string `json:"appversion"`
-		Hostname   string `json:"hostname"`
-	}{
-		appgroup,
-		app,
-		version,
-		hostname,
-	}
-
-	// set some default fields added to all logs
-	log.Logger = zerolog.New(os.Stdout).Hook(messageIDHook{}).With().
-		Timestamp().
-		Str("logformat", "v3").
-		Str("messagetype", "estafette").
-		Str("messagetypeversion", "0.0.0").
-		Interface("source", source).
-		Logger()
-
-	// Have the error message under and object in "error" instead of in a raw string.
-	zerolog.ErrorMarshalFunc = func(err error) interface{} {
-		return v3Error{err.Error()}
-	}
-
-	// use zerolog for any logs sent via standard log library
-	stdlog.SetFlags(0)
-	stdlog.SetOutput(log.Logger)
-
-	LogStartupMessageV3(appgroup, app, version, branch, revision, buildDate)
-}
-
-// LogStartupMessageV3 logs a v3 startup message for any Estafette application
-func LogStartupMessageV3(appgroup, app, version, branch, revision, buildDate string) {
-	startupProps := struct {
-		Branch    string `json:"branch"`
-		Revision  string `json:"revision"`
-		BuildDate string `json:"buildDate"`
-		GoVersion string `json:"goVersion"`
-		Os        string `json:"os"`
-	}{
-		branch,
-		revision,
-		buildDate,
-		goVersion,
-		runtime.GOOS,
-	}
-
-	log.Info().
-		Interface("payload", startupProps).
-		Msgf("Starting %v version %v...", app, version)
-}
-
-// InitStackdriverLogging initializes logging to log everything as json optimized for Stackdriver logging
-func InitStackdriverLogging(appgroup, app, version, branch, revision, buildDate string) {
-
-	zerolog.TimeFieldFormat = "2006-01-02T15:04:05.999Z"
-	zerolog.TimestampFieldName = "timestamp"
-	zerolog.LevelFieldName = "severity"
-
-	// set some default fields added to all logs
-	log.Logger = zerolog.New(os.Stdout).With().
-		Timestamp().
-		Logger()
-
-	// use zerolog for any logs sent via standard log library
-	stdlog.SetFlags(0)
-	stdlog.SetOutput(log.Logger)
-
-	LogStartupMessage(appgroup, app, version, branch, revision, buildDate)
-}
-
-// InitJSONLogging initializes logging to log everything as relatively flat json
-func InitJSONLogging(appgroup, app, version, branch, revision, buildDate string) {
-
-	// set some default fields added to all logs
-	log.Logger = zerolog.New(os.Stdout).With().
-		Timestamp().
-		Logger()
-
-	// use zerolog for any logs sent via standard log library
-	stdlog.SetFlags(0)
-	stdlog.SetOutput(log.Logger)
-
-	LogStartupMessage(appgroup, app, version, branch, revision, buildDate)
-}
-
-// InitConsoleLogging initializes a console logger for use by Estafette CI extensions
-func InitConsoleLogging(appgroup, app, version, branch, revision, buildDate string) {
-
-	output := zerolog.ConsoleWriter{
-		Out: os.Stdout,
-		PartsOrder: []string{
-			zerolog.LevelFieldName,
-			zerolog.MessageFieldName,
-		},
-	}
-	output.FormatTimestamp = func(i interface{}) string {
-		return ""
-	}
-	output.FormatCaller = func(i interface{}) string {
-		return ""
-	}
-	output.FormatLevel = func(i interface{}) string {
-		if ll, ok := i.(string); ok {
-			switch ll {
-			case "debug":
-				return colorizeStart(colorizeGray)
-			case "info",
-				"warn",
-				"error",
-				"fatal",
-				"panic":
-			default:
-			}
-		}
-		return colorizeStart(colorizeReset)
-	}
-	output.FormatMessage = func(i interface{}) string {
-		return fmt.Sprintf("%s%s", i, colorizeEnd())
-	}
-
-	log.Logger = zerolog.New(output).With().Logger()
-
-	// use zerolog for any logs sent via standard log library
-	stdlog.SetFlags(0)
-	stdlog.SetOutput(log.Logger)
-
-	LogStartupMessage(appgroup, app, version, branch, revision, buildDate)
-}
-
-// LogStartupMessage logs a default startup message for any Estafette application
-func LogStartupMessage(appgroup, app, version, branch, revision, buildDate string) {
-	log.Info().
-		Str("branch", branch).
-		Str("revision", revision).
-		Str("buildDate", buildDate).
-		Str("goVersion", goVersion).
-		Str("os", runtime.GOOS).
-		Msgf("Starting %v version %v...", app, version)
-}
-
-type colorizeFormat int
-
-const (
-	colorizeWhite colorizeFormat = 0
-	colorizeGray  colorizeFormat = 1
-	colorizeBold  colorizeFormat = 2
-	colorizeReset colorizeFormat = 3
-)
-
-func colorizeStart(c colorizeFormat) string {
-
-	switch c {
-	case colorizeWhite:
-		return "\x1b[37m"
-	case colorizeGray:
-		return "\x1b[38;5;250m"
-	case colorizeBold:
-		return "\x1b[1m"
-	}
-
-	return "\x1b[0m"
-}
-
-func colorizeEnd() string {
-	return fmt.Sprintf("\x1b[0m")
 }
 
 // InitMetrics initializes the prometheus endpoint /metrics on port 9101
