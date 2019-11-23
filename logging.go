@@ -59,11 +59,8 @@ func initLoggingJSON(appgroup, app, version, branch, revision, buildDate string)
 func initLoggingConsole(appgroup, app, version, branch, revision, buildDate string) {
 
 	output := zerolog.ConsoleWriter{
-		Out: os.Stdout,
-		PartsOrder: []string{
-			zerolog.LevelFieldName,
-			zerolog.MessageFieldName,
-		},
+		Out:     os.Stdout,
+		NoColor: false,
 	}
 	output.FormatTimestamp = func(i interface{}) string {
 		return ""
@@ -193,7 +190,7 @@ func logStartupMessageConsole(appgroup, app, version, branch, revision, buildDat
 		Str("buildDate", buildDate).
 		Str("goVersion", goVersion).
 		Str("os", runtime.GOOS).
-		Msg(aurora.Sprintf(aurora.Bold("Starting %v version %v..."), aurora.BrightWhite(app), aurora.BrightWhite(version)))
+		Msg(aurora.Sprintf("Starting %v version %v...", aurora.Bold(app), aurora.Bold(version)))
 }
 
 // logStartupMessageV3 logs a v3 startup message for any Estafette application
