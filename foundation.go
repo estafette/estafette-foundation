@@ -1,6 +1,7 @@
 package foundation
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -107,6 +108,24 @@ func HandleGracefulShutdown(gracefulShutdown chan os.Signal, waitGroup *sync.Wai
 	log.Info().Msg("Shutting down...")
 }
 
+// InitCancellationContext adds cancelation to a context and on sigterm triggers the cancel function
+func InitCancellationContext(ctx context.Context) context.Context {
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// define channel used to trigger cancellation
+	cancelChannel := make(chan os.Signal)
+
+	signal.Notify(cancelChannel, syscall.SIGTERM, syscall.SIGINT)
+
+	go func(cancelChannel chan os.Signal, cancel context.CancelFunc) {
+		<-cancelChannel
+		cancel()
+	}(cancelChannel, cancel)
+
+	return ctx
+}
+
 // ApplyJitter adds +-25% jitter to the input
 func ApplyJitter(input int) (output int) {
 
@@ -184,14 +203,14 @@ func HandleError(err error) {
 
 // RunCommand runs a full command string and replaces placeholders with the arguments; it logs a fatal on error
 // RunCommand("kubectl logs -l app=%v -n %v", app, namespace)
-func RunCommand(command string, args ...interface{}) {
-	err := RunCommandExtended(command, args...)
+func RunCommand(ctx context.Context, command string, args ...interface{}) {
+	err := RunCommandExtended(ctx, command, args...)
 	HandleError(err)
 }
 
 // RunCommandExtended runs a full command string and replaces placeholders with the arguments; it returns an error if command execution failed
 // err := RunCommandExtended("kubectl logs -l app=%v -n %v", app, namespace)
-func RunCommandExtended(command string, args ...interface{}) error {
+func RunCommandExtended(ctx context.Context, command string, args ...interface{}) error {
 	command = fmt.Sprintf(command, args...)
 	log.Debug().Msgf("> %v", command)
 
@@ -210,7 +229,7 @@ func RunCommandExtended(command string, args ...interface{}) error {
 		a = commandArray[1:]
 	}
 
-	cmd := exec.Command(c, a...)
+	cmd := exec.CommandContext(ctx, c, a...)
 	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -220,17 +239,17 @@ func RunCommandExtended(command string, args ...interface{}) error {
 
 // RunCommandWithArgs runs a single command and passes the arguments; it logs a fatal on error
 // RunCommandWithArgs("kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
-func RunCommandWithArgs(command string, args []string) {
-	err := RunCommandWithArgsExtended(command, args)
+func RunCommandWithArgs(ctx context.Context, command string, args []string) {
+	err := RunCommandWithArgsExtended(ctx, command, args)
 	HandleError(err)
 }
 
 // RunCommandWithArgsExtended runs a single command and passes the arguments; it returns an error if command execution failed
 // err := RunCommandWithArgsExtended("kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
-func RunCommandWithArgsExtended(command string, args []string) error {
+func RunCommandWithArgsExtended(ctx context.Context, command string, args []string) error {
 	log.Debug().Msgf("> %v %v", command, strings.Join(args, " "))
 
-	cmd := exec.Command(command, args...)
+	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
