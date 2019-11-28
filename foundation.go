@@ -162,7 +162,7 @@ func WatchForFileChanges(filePath string, functionOnChange func(fsnotify.Event))
 
 				case err, ok := <-watcher.Errors:
 					if ok { // 'Errors' channel is not closed
-						log.Printf("watcher error: %v\n", err)
+						log.Warn().Err(err).Msg("Watcher error")
 					}
 					eventsWG.Done()
 					return
@@ -179,7 +179,7 @@ func WatchForFileChanges(filePath string, functionOnChange func(fsnotify.Event))
 // HandleError logs a fatal when the error is not nil
 func HandleError(err error) {
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("Fatal error")
 	}
 }
 
