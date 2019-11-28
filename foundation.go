@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/logrusorgru/aurora"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 )
@@ -180,7 +181,7 @@ func WatchForFileChanges(filePath string, functionOnChange func(fsnotify.Event))
 
 				case err, ok := <-watcher.Errors:
 					if ok { // 'Errors' channel is not closed
-						log.Printf("watcher error: %v\n", err)
+						log.Warn().Err(err).Msg("Watcher error")
 					}
 					eventsWG.Done()
 					return
@@ -197,7 +198,7 @@ func WatchForFileChanges(filePath string, functionOnChange func(fsnotify.Event))
 // HandleError logs a fatal when the error is not nil
 func HandleError(err error) {
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("Fatal error")
 	}
 }
 
@@ -212,7 +213,7 @@ func RunCommand(ctx context.Context, command string, args ...interface{}) {
 // err := RunCommandExtended("kubectl logs -l app=%v -n %v", app, namespace)
 func RunCommandExtended(ctx context.Context, command string, args ...interface{}) error {
 	command = fmt.Sprintf(command, args...)
-	log.Debug().Msgf("> %v", command)
+	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "> %v"), command))
 
 	// trim spaces and de-dupe spaces in string
 	command = strings.ReplaceAll(command, "  ", " ")
@@ -247,7 +248,7 @@ func RunCommandWithArgs(ctx context.Context, command string, args []string) {
 // RunCommandWithArgsExtended runs a single command and passes the arguments; it returns an error if command execution failed
 // err := RunCommandWithArgsExtended("kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
 func RunCommandWithArgsExtended(ctx context.Context, command string, args []string) error {
-	log.Debug().Msgf("> %v %v", command, strings.Join(args, " "))
+	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "> %v %v"), command, strings.Join(args, " ")))
 
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Env = os.Environ()
