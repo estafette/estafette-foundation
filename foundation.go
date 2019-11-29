@@ -37,23 +37,33 @@ func InitLoggingFromEnv(appgroup, app, version, branch, revision, buildDate stri
 // InitLoggingByFormat initalializes a logger with specified format and outputs a startup message
 func InitLoggingByFormat(appgroup, app, version, branch, revision, buildDate string, logFormat string) {
 
-	// configure logger and output startup message
+	// configure logger
+	InitLoggingByFormatSilent(appgroup, app, version, branch, revision, buildDate, logFormat)
+
+	// output startup message
+	switch logFormat {
+	case LogFormatV3:
+		logStartupMessageV3(appgroup, app, version, branch, revision, buildDate)
+	default:
+		logStartupMessage(appgroup, app, version, branch, revision, buildDate)
+	}
+}
+
+// InitLoggingByFormatSilent initializes a logger with specified format without outputting a startup message
+func InitLoggingByFormatSilent(appgroup, app, version, branch, revision, buildDate string, logFormat string) {
+
+	// configure logger
 	switch logFormat {
 	case LogFormatJSON:
 		initLoggingJSON(appgroup, app, version, branch, revision, buildDate)
-		logStartupMessage(appgroup, app, version, branch, revision, buildDate)
 	case LogFormatStackdriver:
 		initLoggingStackdriver(appgroup, app, version, branch, revision, buildDate)
-		logStartupMessage(appgroup, app, version, branch, revision, buildDate)
 	case LogFormatV3:
 		initLoggingV3(appgroup, app, version, branch, revision, buildDate)
-		logStartupMessageV3(appgroup, app, version, branch, revision, buildDate)
 	case LogFormatConsole:
 		initLoggingConsole(appgroup, app, version, branch, revision, buildDate)
-		logStartupMessageConsole(appgroup, app, version, branch, revision, buildDate)
 	default: // LogFormatPlainText
 		initLoggingPlainText(appgroup, app, version, branch, revision, buildDate)
-		logStartupMessage(appgroup, app, version, branch, revision, buildDate)
 	}
 }
 
