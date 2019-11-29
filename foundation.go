@@ -258,6 +258,19 @@ func RunCommandWithArgsExtended(ctx context.Context, command string, args []stri
 	return err
 }
 
+// GetCommandWithArgsOutput runs a single command and passes the arguments; it returns the output as a string and an error if command execution failed
+// output, err := GetCommandWithArgsOutput("kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
+func GetCommandWithArgsOutput(ctx context.Context, command string, args []string) (string, error) {
+	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "> %v %v"), command, strings.Join(args, " ")))
+
+	cmd := exec.CommandContext(ctx, command, args...)
+	cmd.Env = os.Environ()
+	cmd.Stderr = os.Stderr
+	output, err := cmd.Output()
+
+	return string(output), err
+}
+
 // FileExists checks if a file exists
 func FileExists(filename string) bool {
 	info, err := os.Stat(filename)
