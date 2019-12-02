@@ -21,3 +21,15 @@ func (ai *ApplicationInfo) OperatingSystem() string {
 func (ai *ApplicationInfo) GoVersion() string {
 	return runtime.Version()
 }
+
+// NewApplicationInfo returns an ApplicationInfo object
+func NewApplicationInfo(appgroup, app, version, branch, revision, buildDate string) ApplicationInfo {
+	return ApplicationInfo{
+		AppGroup:  appgroup,
+		App:       app,
+		Version:   version,
+		Branch:    branch,
+		Revision:  revision,
+		BuildDate: buildDate,
+	}
+}
