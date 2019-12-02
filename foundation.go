@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 
@@ -23,47 +22,45 @@ import (
 )
 
 var (
-	goVersion = runtime.Version()
-
 	// seed random number
 	r = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
 // InitLoggingFromEnv initalializes a logger with format specified in envvar ESTAFETTE_LOG_FORMAT and outputs a startup message
-func InitLoggingFromEnv(appgroup, app, version, branch, revision, buildDate string) {
-	InitLoggingByFormat(appgroup, app, version, branch, revision, buildDate, os.Getenv("ESTAFETTE_LOG_FORMAT"))
+func InitLoggingFromEnv(applicationInfo ApplicationInfo) {
+	InitLoggingByFormat(applicationInfo, os.Getenv("ESTAFETTE_LOG_FORMAT"))
 }
 
 // InitLoggingByFormat initalializes a logger with specified format and outputs a startup message
-func InitLoggingByFormat(appgroup, app, version, branch, revision, buildDate string, logFormat string) {
+func InitLoggingByFormat(applicationInfo ApplicationInfo, logFormat string) {
 
 	// configure logger
-	InitLoggingByFormatSilent(appgroup, app, version, branch, revision, buildDate, logFormat)
+	InitLoggingByFormatSilent(applicationInfo, logFormat)
 
 	// output startup message
 	switch logFormat {
 	case LogFormatV3:
-		logStartupMessageV3(appgroup, app, version, branch, revision, buildDate)
+		logStartupMessageV3(applicationInfo)
 	default:
-		logStartupMessage(appgroup, app, version, branch, revision, buildDate)
+		logStartupMessage(applicationInfo)
 	}
 }
 
 // InitLoggingByFormatSilent initializes a logger with specified format without outputting a startup message
-func InitLoggingByFormatSilent(appgroup, app, version, branch, revision, buildDate string, logFormat string) {
+func InitLoggingByFormatSilent(applicationInfo ApplicationInfo, logFormat string) {
 
 	// configure logger
 	switch logFormat {
 	case LogFormatJSON:
-		initLoggingJSON(appgroup, app, version, branch, revision, buildDate)
+		initLoggingJSON(applicationInfo)
 	case LogFormatStackdriver:
-		initLoggingStackdriver(appgroup, app, version, branch, revision, buildDate)
+		initLoggingStackdriver(applicationInfo)
 	case LogFormatV3:
-		initLoggingV3(appgroup, app, version, branch, revision, buildDate)
+		initLoggingV3(applicationInfo)
 	case LogFormatConsole:
-		initLoggingConsole(appgroup, app, version, branch, revision, buildDate)
+		initLoggingConsole(applicationInfo)
 	default: // LogFormatPlainText
-		initLoggingPlainText(appgroup, app, version, branch, revision, buildDate)
+		initLoggingPlainText(applicationInfo)
 	}
 }
 

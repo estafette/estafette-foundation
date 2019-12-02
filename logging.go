@@ -3,7 +3,6 @@ package foundation
 import (
 	stdlog "log"
 	"os"
-	"runtime"
 	"sync/atomic"
 
 	"github.com/google/uuid"
@@ -26,7 +25,7 @@ const (
 )
 
 // initLoggingStackdriver outputs a format similar to JSON format but with 'severity' instead of 'level' field
-func initLoggingStackdriver(appgroup, app, version, branch, revision, buildDate string) {
+func initLoggingStackdriver(applicationInfo ApplicationInfo) {
 
 	zerolog.TimeFieldFormat = "2006-01-02T15:04:05.999Z"
 	zerolog.TimestampFieldName = "timestamp"
@@ -43,7 +42,7 @@ func initLoggingStackdriver(appgroup, app, version, branch, revision, buildDate 
 }
 
 // initLoggingJSON outputs logs in json including appgroup, app, appversion and other metadata
-func initLoggingJSON(appgroup, app, version, branch, revision, buildDate string) {
+func initLoggingJSON(applicationInfo ApplicationInfo) {
 
 	// set some default fields added to all logs
 	log.Logger = zerolog.New(os.Stdout).With().
@@ -56,7 +55,7 @@ func initLoggingJSON(appgroup, app, version, branch, revision, buildDate string)
 }
 
 // initLoggingConsole outputs logs in plain text with colorization and without timestamp
-func initLoggingConsole(appgroup, app, version, branch, revision, buildDate string) {
+func initLoggingConsole(applicationInfo ApplicationInfo) {
 
 	output := zerolog.ConsoleWriter{
 		Out:     os.Stdout,
@@ -80,7 +79,7 @@ func initLoggingConsole(appgroup, app, version, branch, revision, buildDate stri
 }
 
 // initLoggingPlainText outputs logs in plain text without colorization and with timestamp; is the default if log format isn't specified
-func initLoggingPlainText(appgroup, app, version, branch, revision, buildDate string) {
+func initLoggingPlainText(applicationInfo ApplicationInfo) {
 	output := zerolog.ConsoleWriter{
 		Out:     os.Stdout,
 		NoColor: true,
@@ -109,7 +108,7 @@ func (h messageIDHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
 }
 
 // initLoggingV3 ouputs an internal format used at Travix in JSON format with nested payload and a specific set of required metadata
-func initLoggingV3(appgroup, app, version, branch, revision, buildDate string) {
+func initLoggingV3(applicationInfo ApplicationInfo) {
 
 	zerolog.TimeFieldFormat = "2006-01-02T15:04:05.999Z"
 	zerolog.TimestampFieldName = "timestamp"
@@ -146,9 +145,9 @@ func initLoggingV3(appgroup, app, version, branch, revision, buildDate string) {
 		AppVersion string `json:"appversion"`
 		Hostname   string `json:"hostname"`
 	}{
-		appgroup,
-		app,
-		version,
+		applicationInfo.AppGroup,
+		applicationInfo.App,
+		applicationInfo.Version,
 		hostname,
 	}
 
@@ -172,29 +171,29 @@ func initLoggingV3(appgroup, app, version, branch, revision, buildDate string) {
 }
 
 // logStartupMessage logs a default startup message for any Estafette application
-func logStartupMessage(appgroup, app, version, branch, revision, buildDate string) {
+func logStartupMessage(applicationInfo ApplicationInfo) {
 	log.Info().
-		Str("branch", branch).
-		Str("revision", revision).
-		Str("buildDate", buildDate).
-		Str("goVersion", goVersion).
-		Str("os", runtime.GOOS).
-		Msgf("Starting %v version %v...", app, version)
+		Str("branch", applicationInfo.Branch).
+		Str("revision", applicationInfo.Revision).
+		Str("buildDate", applicationInfo.BuildDate).
+		Str("goVersion", applicationInfo.GoVersion()).
+		Str("os", applicationInfo.OperatingSystem()).
+		Msgf("Starting %v version %v...", applicationInfo.App, applicationInfo.Version)
 }
 
 // logStartupMessageConsole logs a default startup message for any Estafette application in bold
-func logStartupMessageConsole(appgroup, app, version, branch, revision, buildDate string) {
+func logStartupMessageConsole(applicationInfo ApplicationInfo) {
 	log.Info().
-		Str("branch", branch).
-		Str("revision", revision).
-		Str("buildDate", buildDate).
-		Str("goVersion", goVersion).
-		Str("os", runtime.GOOS).
-		Msg(aurora.Sprintf("Starting %v version %v...", aurora.Bold(app), aurora.Bold(version)))
+		Str("branch", applicationInfo.Branch).
+		Str("revision", applicationInfo.Revision).
+		Str("buildDate", applicationInfo.BuildDate).
+		Str("goVersion", applicationInfo.GoVersion()).
+		Str("os", applicationInfo.OperatingSystem()).
+		Msg(aurora.Sprintf("Starting %v version %v...", aurora.Bold(applicationInfo.App), aurora.Bold(applicationInfo.Version)))
 }
 
 // logStartupMessageV3 logs a v3 startup message for any Estafette application
-func logStartupMessageV3(appgroup, app, version, branch, revision, buildDate string) {
+func logStartupMessageV3(applicationInfo ApplicationInfo) {
 	startupProps := struct {
 		Branch    string `json:"branch"`
 		Revision  string `json:"revision"`
@@ -202,14 +201,14 @@ func logStartupMessageV3(appgroup, app, version, branch, revision, buildDate str
 		GoVersion string `json:"goVersion"`
 		Os        string `json:"os"`
 	}{
-		branch,
-		revision,
-		buildDate,
-		goVersion,
-		runtime.GOOS,
+		applicationInfo.Branch,
+		applicationInfo.Revision,
+		applicationInfo.BuildDate,
+		applicationInfo.GoVersion(),
+		applicationInfo.OperatingSystem(),
 	}
 
 	log.Info().
 		Interface("payload", startupProps).
-		Msgf("Starting %v version %v...", app, version)
+		Msgf("Starting %v version %v...", applicationInfo.App, applicationInfo.Version)
 }
