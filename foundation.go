@@ -2,22 +2,16 @@ package foundation
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
-	"net/http"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/logrusorgru/aurora"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 )
 
@@ -25,66 +19,6 @@ var (
 	// seed random number
 	r = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
-
-// InitLoggingFromEnv initalializes a logger with format specified in envvar ESTAFETTE_LOG_FORMAT and outputs a startup message
-func InitLoggingFromEnv(applicationInfo ApplicationInfo) {
-	InitLoggingByFormat(applicationInfo, os.Getenv("ESTAFETTE_LOG_FORMAT"))
-}
-
-// InitLoggingByFormat initalializes a logger with specified format and outputs a startup message
-func InitLoggingByFormat(applicationInfo ApplicationInfo, logFormat string) {
-
-	// configure logger
-	InitLoggingByFormatSilent(applicationInfo, logFormat)
-
-	// output startup message
-	switch logFormat {
-	case LogFormatV3:
-		logStartupMessageV3(applicationInfo)
-	default:
-		logStartupMessage(applicationInfo)
-	}
-}
-
-// InitLoggingByFormatSilent initializes a logger with specified format without outputting a startup message
-func InitLoggingByFormatSilent(applicationInfo ApplicationInfo, logFormat string) {
-
-	// configure logger
-	switch logFormat {
-	case LogFormatJSON:
-		initLoggingJSON(applicationInfo)
-	case LogFormatStackdriver:
-		initLoggingStackdriver(applicationInfo)
-	case LogFormatV3:
-		initLoggingV3(applicationInfo)
-	case LogFormatConsole:
-		initLoggingConsole(applicationInfo)
-	default: // LogFormatPlainText
-		initLoggingPlainText(applicationInfo)
-	}
-}
-
-// InitMetrics initializes the prometheus endpoint /metrics on port 9101
-func InitMetrics() {
-	InitMetricsWithPort(9101)
-}
-
-// InitMetricsWithPort initializes the prometheus endpoint /metrics on specified port
-func InitMetricsWithPort(port int) {
-	// start prometheus
-	go func() {
-		portString := fmt.Sprintf(":%v", port)
-		log.Debug().
-			Str("port", portString).
-			Msg("Serving Prometheus metrics...")
-
-		http.Handle("/metrics", promhttp.Handler())
-
-		if err := http.ListenAndServe(portString, nil); err != nil {
-			log.Fatal().Err(err).Msg("Starting Prometheus listener failed")
-		}
-	}()
-}
 
 // InitGracefulShutdownHandling generates the channel that listens to SIGTERM and a waitgroup to use for finishing work when shutting down
 func InitGracefulShutdownHandling() (gracefulShutdown chan os.Signal, waitGroup *sync.WaitGroup) {
@@ -200,82 +134,6 @@ func WatchForFileChanges(filePath string, functionOnChange func(fsnotify.Event))
 		eventsWG.Wait() // now, wait for event loop to end in this go-routine...
 	}()
 	initWG.Wait() // make sure that the go routine above fully ended before returning
-}
-
-// HandleError logs a fatal when the error is not nil
-func HandleError(err error) {
-	if err != nil {
-		log.Fatal().Err(err).Msg("Fatal error")
-	}
-}
-
-// RunCommand runs a full command string and replaces placeholders with the arguments; it logs a fatal on error
-// RunCommand("kubectl logs -l app=%v -n %v", app, namespace)
-func RunCommand(ctx context.Context, command string, args ...interface{}) {
-	err := RunCommandExtended(ctx, command, args...)
-	HandleError(err)
-}
-
-// RunCommandExtended runs a full command string and replaces placeholders with the arguments; it returns an error if command execution failed
-// err := RunCommandExtended("kubectl logs -l app=%v -n %v", app, namespace)
-func RunCommandExtended(ctx context.Context, command string, args ...interface{}) error {
-	command = fmt.Sprintf(command, args...)
-	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "> %v"), command))
-
-	// trim spaces and de-dupe spaces in string
-	command = strings.ReplaceAll(command, "  ", " ")
-	command = strings.Trim(command, " ")
-
-	// split into actual command and arguments
-	commandArray := strings.Split(command, " ")
-	var c string
-	var a []string
-	if len(commandArray) > 0 {
-		c = commandArray[0]
-	}
-	if len(commandArray) > 1 {
-		a = commandArray[1:]
-	}
-
-	cmd := exec.CommandContext(ctx, c, a...)
-	cmd.Env = os.Environ()
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	return err
-}
-
-// RunCommandWithArgs runs a single command and passes the arguments; it logs a fatal on error
-// RunCommandWithArgs("kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
-func RunCommandWithArgs(ctx context.Context, command string, args []string) {
-	err := RunCommandWithArgsExtended(ctx, command, args)
-	HandleError(err)
-}
-
-// RunCommandWithArgsExtended runs a single command and passes the arguments; it returns an error if command execution failed
-// err := RunCommandWithArgsExtended("kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
-func RunCommandWithArgsExtended(ctx context.Context, command string, args []string) error {
-	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "> %v %v"), command, strings.Join(args, " ")))
-
-	cmd := exec.CommandContext(ctx, command, args...)
-	cmd.Env = os.Environ()
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	return err
-}
-
-// GetCommandWithArgsOutput runs a single command and passes the arguments; it returns the output as a string and an error if command execution failed
-// output, err := GetCommandWithArgsOutput("kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
-func GetCommandWithArgsOutput(ctx context.Context, command string, args []string) (string, error) {
-	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "> %v %v"), command, strings.Join(args, " ")))
-
-	cmd := exec.CommandContext(ctx, command, args...)
-	cmd.Env = os.Environ()
-	cmd.Stderr = os.Stderr
-	output, err := cmd.Output()
-
-	return string(output), err
 }
 
 // FileExists checks if a file exists

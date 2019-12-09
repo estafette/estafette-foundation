@@ -24,6 +24,44 @@ const (
 	LogFormatV3 = "v3"
 )
 
+// InitLoggingFromEnv initalializes a logger with format specified in envvar ESTAFETTE_LOG_FORMAT and outputs a startup message
+func InitLoggingFromEnv(applicationInfo ApplicationInfo) {
+	InitLoggingByFormat(applicationInfo, os.Getenv("ESTAFETTE_LOG_FORMAT"))
+}
+
+// InitLoggingByFormat initalializes a logger with specified format and outputs a startup message
+func InitLoggingByFormat(applicationInfo ApplicationInfo, logFormat string) {
+
+	// configure logger
+	InitLoggingByFormatSilent(applicationInfo, logFormat)
+
+	// output startup message
+	switch logFormat {
+	case LogFormatV3:
+		logStartupMessageV3(applicationInfo)
+	default:
+		logStartupMessage(applicationInfo)
+	}
+}
+
+// InitLoggingByFormatSilent initializes a logger with specified format without outputting a startup message
+func InitLoggingByFormatSilent(applicationInfo ApplicationInfo, logFormat string) {
+
+	// configure logger
+	switch logFormat {
+	case LogFormatJSON:
+		initLoggingJSON(applicationInfo)
+	case LogFormatStackdriver:
+		initLoggingStackdriver(applicationInfo)
+	case LogFormatV3:
+		initLoggingV3(applicationInfo)
+	case LogFormatConsole:
+		initLoggingConsole(applicationInfo)
+	default: // LogFormatPlainText
+		initLoggingPlainText(applicationInfo)
+	}
+}
+
 // initLoggingStackdriver outputs a format similar to JSON format but with 'severity' instead of 'level' field
 func initLoggingStackdriver(applicationInfo ApplicationInfo) {
 
