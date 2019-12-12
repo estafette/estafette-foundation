@@ -28,11 +28,21 @@ type RetryOption func(*RetryConfig)
 // DelayTypeFunc allows to override the DelayType
 type DelayTypeFunc func(n uint, config *RetryConfig) time.Duration
 
-// ExponentialJitterBackoff returns ever increasing backoffs by a power of 2
+// ExponentialJitterBackoffDelay returns ever increasing backoffs by a power of 2
 // with +/- 0-25% to prevent sychronized requests.
-func ExponentialJitterBackoff(n uint, config *RetryConfig) time.Duration {
+func ExponentialJitterBackoffDelay(n uint, config *RetryConfig) time.Duration {
 	ms := ApplyJitter(config.DelayMillisecond * int(1<<n))
 	return time.Duration(ms) * time.Millisecond
+}
+
+// ExponentialBackOffDelay is a DelayType which increases delay between consecutive retries exponentially
+func ExponentialBackOffDelay(n uint, config *RetryConfig) time.Duration {
+	return time.Duration(config.DelayMillisecond) * (1 << n)
+}
+
+// FixedDelay is a DelayType which keeps delay the same through all iterations
+func FixedDelay(_ uint, config *RetryConfig) time.Duration {
+	return time.Duration(config.DelayMillisecond)
 }
 
 // Attempts set count of retry
@@ -51,6 +61,7 @@ func DelayMillisecond(delayMilliSeconds int) RetryOption {
 	}
 }
 
+// RetryConfig is used to configure the Retry function
 type RetryConfig struct {
 	Attempts         uint
 	DelayMillisecond int
@@ -66,7 +77,7 @@ func Retry(retryableFunc func() error, opts ...RetryOption) error {
 	config := &RetryConfig{
 		Attempts:         3,
 		DelayMillisecond: 100,
-		DelayType:        ExponentialJitterBackoff,
+		DelayType:        ExponentialJitterBackoffDelay,
 		LastErrorOnly:    false,
 	}
 
