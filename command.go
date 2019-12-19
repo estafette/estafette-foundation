@@ -29,11 +29,12 @@ func RunCommand(ctx context.Context, command string, args ...interface{}) {
 // err := RunCommandExtended("kubectl logs -l app=%v -n %v", app, namespace)
 func RunCommandExtended(ctx context.Context, command string, args ...interface{}) error {
 	command = fmt.Sprintf(command, args...)
-	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "> %v"), command))
 
 	// trim spaces and de-dupe spaces in string
 	command = strings.ReplaceAll(command, "  ", " ")
 	command = strings.Trim(command, " ")
+
+	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "> %v"), command))
 
 	// split into actual command and arguments
 	commandArray := strings.Split(command, " ")
