@@ -38,13 +38,22 @@ func RunCommandExtended(ctx context.Context, command string, args ...interface{}
 
 	// split into actual command and arguments
 	commandArray := strings.Split(command, " ")
+
+	// remove empty items
+	var cleanedCommandArray []string
+	for _, str := range commandArray {
+		if str != "" {
+			cleanedCommandArray = append(cleanedCommandArray, str)
+		}
+	}
+
 	var c string
 	var a []string
-	if len(commandArray) > 0 {
-		c = commandArray[0]
+	if len(cleanedCommandArray) > 0 {
+		c = cleanedCommandArray[0]
 	}
-	if len(commandArray) > 1 {
-		a = commandArray[1:]
+	if len(cleanedCommandArray) > 1 {
+		a = cleanedCommandArray[1:]
 	}
 
 	cmd := exec.CommandContext(ctx, c, a...)
