@@ -3,6 +3,7 @@ package foundation
 import (
 	stdlog "log"
 	"os"
+	"strings"
 	"sync/atomic"
 
 	"github.com/google/uuid"
