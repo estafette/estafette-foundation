@@ -35,6 +35,9 @@ func InitLoggingByFormat(applicationInfo ApplicationInfo, logFormat string) {
 	// configure logger
 	InitLoggingByFormatSilent(applicationInfo, logFormat)
 
+	// set global logging level
+	SetLoggingLevelFromEnv()
+
 	// output startup message
 	switch logFormat {
 	case LogFormatV3:
@@ -59,6 +62,30 @@ func InitLoggingByFormatSilent(applicationInfo ApplicationInfo, logFormat string
 		initLoggingConsole(applicationInfo)
 	default: // LogFormatPlainText
 		initLoggingPlainText(applicationInfo)
+	}
+}
+
+// SetLoggingLevelFromEnv sets the logging level from which log messages and higher are outputted via envvar ESTAFETTE_LOG_LEVEL
+func SetLoggingLevelFromEnv() {
+	logLevel := os.Getenv("ESTAFETTE_LOG_LEVEL")
+
+	switch strings.ToLower(logLevel) {
+	case "disabled":
+		zerolog.SetGlobalLevel(zerolog.Disabled)
+	case "trace":
+		zerolog.SetGlobalLevel(zerolog.TraceLevel)
+	case "debug":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	case "info":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "warn":
+		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+	case "error":
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	case "fatal":
+		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+	case "panic":
+		zerolog.SetGlobalLevel(zerolog.PanicLevel)
 	}
 }
 
