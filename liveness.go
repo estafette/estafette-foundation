@@ -10,7 +10,7 @@ import (
 
 // InitLiveness initializes the /liveness endpoint on port 5000
 func InitLiveness() {
-	InitLivenessWithPort(500)
+	InitLivenessWithPort(5000)
 }
 
 // InitLivenessWithPort initializes the /liveness endpoint on specified port
@@ -23,7 +23,7 @@ func InitLivenessWithPort(port int) {
 			Msg("Serving /liveness endpoint...")
 
 		http.HandleFunc("/liveness", func(w http.ResponseWriter, _ *http.Request) {
-			io.WriteString(w, "I'm allive!\n")
+			io.WriteString(w, "I'm alive!\n")
 		})
 
 		if err := http.ListenAndServe(portString, nil); err != nil {
