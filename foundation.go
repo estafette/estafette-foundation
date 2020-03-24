@@ -28,7 +28,7 @@ func InitGracefulShutdownHandling() (gracefulShutdown chan os.Signal, waitGroup 
 	// define channel used to gracefully shutdown the application
 	gracefulShutdown = make(chan os.Signal)
 
-	signal.Notify(gracefulShutdown, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(gracefulShutdown, syscall.SIGTERM, syscall.SIGINT)
 
 	waitGroup = &sync.WaitGroup{}
 
@@ -60,7 +60,7 @@ func InitCancellationContext(ctx context.Context) context.Context {
 	// define channel used to trigger cancellation
 	cancelChannel := make(chan os.Signal)
 
-	signal.Notify(cancelChannel, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(cancelChannel, syscall.SIGTERM, syscall.SIGINT)
 
 	go func(cancelChannel chan os.Signal, cancel context.CancelFunc) {
 		<-cancelChannel
