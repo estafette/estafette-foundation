@@ -157,6 +157,16 @@ func StringArrayContains(array []string, search string) bool {
 	return false
 }
 
+// IntArrayContains checks if an array contains a specific value
+func IntArrayContains(array []int, search int) bool {
+	for _, v := range array {
+		if v == search {
+			return true
+		}
+	}
+	return false
+}
+
 // ToUpperSnakeCase turns any input string into an upper snake cased string
 func ToUpperSnakeCase(in string) string {
 	runes := []rune(in)
