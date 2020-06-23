@@ -83,3 +83,55 @@ import "github.com/estafette/estafette-foundation"
 sleepTime := foundation.ApplyJitter(30)
 time.Sleep(time.Duration(sleepTime) * time.Second)
 ```
+
+### Retry
+
+In order to retry a function you can use the `Retry` function to which you can pass a retryable function with signature `func() error`:
+
+```go
+import "github.com/estafette/estafette-foundation"
+
+foundation.Retry(func() error { do something that can fail })
+```
+
+Without passing any additional options it will by default try 3 times, with exponential backoff with jitter applied to the interval for any error returned by the retryable function.
+
+In order to override the defaults you can pass them in with the following options:
+
+```go
+import "github.com/estafette/estafette-foundation"
+
+foundation.Retry(func() error { do something that can fail }, Attempts(5), DelayMillisecond(10), Fixed())
+```
+
+The following options can be passed in:
+
+| Option   | Config property | Description |
+| -------- | --------------- | ----------- |
+| Attempts | Attempts        | Sets the number of attempts the retryable function will be attempted before returning the error |
+| DelayMillisecond | DelayMillisecond | Sets the base number of milliseconds between the retries or to base the exponential backoff delay on |
+| ExponentialJitterBackoff | DelayType |
+| ExponentialBackoff | DelayType |
+| Fixed | DelayType |
+| AnyError | IsRetryableError |
+
+#### Custom options
+
+You can also override any of the config properties by passing in a custom option with signature `func(*RetryConfig)`, which could look like:
+
+```go
+import "github.com/estafette/estafette-foundation"
+
+isRetryableErrorCustomOption := func(c *RetryConfig) {
+  c.IsRetryableError = func(err error) bool {
+    switch e := err.(type) {
+      case *googleapi.Error:
+        return e.Code == 429 || (e.Code >= 500 && e.Code < 600)
+      default:
+        return false
+    }
+  }
+}
+
+foundation.Retry(func() error { do something that can fail }, isRetryableErrorCustomOption)
+```

@@ -25,6 +25,50 @@ func (e RetryError) Error() string {
 // RetryOption allows to override config
 type RetryOption func(*RetryConfig)
 
+// Attempts set count of retry
+// default is 3
+func Attempts(attempts uint) RetryOption {
+	return func(c *RetryConfig) {
+		c.Attempts = attempts
+	}
+}
+
+// DelayMillisecond sets delay between retries
+// default is 100ms
+func DelayMillisecond(delayMilliSeconds int) RetryOption {
+	return func(c *RetryConfig) {
+		c.DelayMillisecond = delayMilliSeconds
+	}
+}
+
+// ExponentialJitterBackoff sets ExponentialJitterBackoffDelay as DelayType
+func ExponentialJitterBackoff() RetryOption {
+	return func(c *RetryConfig) {
+		c.DelayType = ExponentialJitterBackoffDelay
+	}
+}
+
+// ExponentialBackOff sets ExponentialBackOffDelay as DelayType
+func ExponentialBackOff() RetryOption {
+	return func(c *RetryConfig) {
+		c.DelayType = ExponentialBackOffDelay
+	}
+}
+
+// Fixed sets FixedDelay as DelayType
+func Fixed() RetryOption {
+	return func(c *RetryConfig) {
+		c.DelayType = FixedDelay
+	}
+}
+
+// AnyError is sets AnyErrorIsRetryable as IsRetryableError
+func AnyError() RetryOption {
+	return func(c *RetryConfig) {
+		c.IsRetryableError = AnyErrorIsRetryable
+	}
+}
+
 // DelayTypeFunc allows to override the DelayType
 type DelayTypeFunc func(n uint, config *RetryConfig) time.Duration
 
@@ -45,20 +89,12 @@ func FixedDelay(_ uint, config *RetryConfig) time.Duration {
 	return time.Duration(config.DelayMillisecond)
 }
 
-// Attempts set count of retry
-// default is 3
-func Attempts(attempts uint) RetryOption {
-	return func(c *RetryConfig) {
-		c.Attempts = attempts
-	}
-}
+// IsRetryableErrorFunc allows to apply custom logic to whether an error is retryable
+type IsRetryableErrorFunc func(err error) bool
 
-// DelayMillisecond sets delay between retries
-// default is 100ms
-func DelayMillisecond(delayMilliSeconds int) RetryOption {
-	return func(c *RetryConfig) {
-		c.DelayMillisecond = delayMilliSeconds
-	}
+// AnyErrorIsRetryable is a IsRetryableErrorFunc which returns whether an error should be retried
+func AnyErrorIsRetryable(err error) bool {
+	return err != nil
 }
 
 // RetryConfig is used to configure the Retry function
@@ -67,6 +103,7 @@ type RetryConfig struct {
 	DelayMillisecond int
 	DelayType        DelayTypeFunc
 	LastErrorOnly    bool
+	IsRetryableError IsRetryableErrorFunc
 }
 
 // Retry retries a function
@@ -79,6 +116,7 @@ func Retry(retryableFunc func() error, opts ...RetryOption) error {
 		DelayMillisecond: 100,
 		DelayType:        ExponentialJitterBackoffDelay,
 		LastErrorOnly:    false,
+		IsRetryableError: AnyErrorIsRetryable,
 	}
 
 	// apply options to override config defaults
@@ -102,6 +140,11 @@ func Retry(retryableFunc func() error, opts ...RetryOption) error {
 
 			// if this is last attempt - don't wait
 			if n == config.Attempts-1 {
+				break
+			}
+
+			// if this error shouldn't be retried don't retry
+			if !config.IsRetryableError(err) {
 				break
 			}
 
