@@ -62,6 +62,13 @@ func Fixed() RetryOption {
 	}
 }
 
+// LastErrorOnly sets LastErrorOnly config value
+func LastErrorOnly(value bool) RetryOption {
+	return func(c *RetryConfig) {
+		c.LastErrorOnly = value
+	}
+}
+
 // AnyError is sets AnyErrorIsRetryable as IsRetryableError
 func AnyError() RetryOption {
 	return func(c *RetryConfig) {

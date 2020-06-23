@@ -122,7 +122,7 @@ You can also override any of the config properties by passing in a custom option
 ```go
 import "github.com/estafette/estafette-foundation"
 
-isRetryableErrorCustomOption := func(c *RetryConfig) {
+isRetryableErrorCustomOption := func(c *foundation.RetryConfig) {
   c.IsRetryableError = func(err error) bool {
     switch e := err.(type) {
       case *googleapi.Error:

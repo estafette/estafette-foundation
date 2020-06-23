@@ -62,6 +62,22 @@ func TestRetry(t *testing.T) {
 		assert.Equal(t, 5, attempts)
 	})
 
+	t.Run("ReturnsLastErrIfFunctionFailsEveryTimeWithLastErrorOnlyTrue", func(t *testing.T) {
+
+		attempts := 0
+		retryableFunc := func() error {
+			attempts++
+			return ErrToRetry
+		}
+
+		// act
+		err := Retry(retryableFunc, Attempts(5), DelayMillisecond(10), Fixed(), LastErrorOnly(true))
+
+		assert.NotNil(t, err)
+		assert.True(t, errors.Is(err, ErrToRetry))
+		assert.Equal(t, 5, attempts)
+	})
+
 	t.Run("RetriesForCustomRetryableErrorFunc", func(t *testing.T) {
 
 		attempts := 0
