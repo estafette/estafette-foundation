@@ -8,14 +8,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInitLiveness(t *testing.T) {
+func TestInitReadiness(t *testing.T) {
 
 	t.Run("Returns200OK", func(t *testing.T) {
 
 		// act
-		InitLivenessWithPort(5000)
+		InitReadinessWithPort(5001)
 
-		resp, err := http.Get("http://localhost:5000/liveness")
+		resp, err := http.Get("http://localhost:5001/readiness")
 
 		if assert.Nil(t, err) {
 
@@ -25,7 +25,7 @@ func TestInitLiveness(t *testing.T) {
 			body, err := ioutil.ReadAll(resp.Body)
 
 			if assert.Nil(t, err) {
-				assert.Equal(t, "I'm alive!\n", string(body))
+				assert.Equal(t, "I'm ready!\n", string(body))
 			}
 		}
 	})

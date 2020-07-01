@@ -22,11 +22,12 @@ func InitLivenessWithPort(port int) {
 			Str("port", portString).
 			Msg("Serving /liveness endpoint...")
 
-		http.HandleFunc("/liveness", func(w http.ResponseWriter, _ *http.Request) {
+		serverMux := http.NewServeMux()
+		serverMux.HandleFunc("/liveness", func(w http.ResponseWriter, _ *http.Request) {
 			io.WriteString(w, "I'm alive!\n")
 		})
 
-		if err := http.ListenAndServe(portString, nil); err != nil {
+		if err := http.ListenAndServe(portString, serverMux); err != nil {
 			log.Fatal().Err(err).Msg("Starting /liveness listener failed")
 		}
 	}()
