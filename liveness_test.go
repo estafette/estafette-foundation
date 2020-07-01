@@ -2,9 +2,9 @@ package foundation
 
 import (
 	"io/ioutil"
-	"net/http"
 	"testing"
 
+	"github.com/sethgrid/pester"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +15,7 @@ func TestInitLiveness(t *testing.T) {
 		// act
 		InitLivenessWithPort(5000)
 
-		resp, err := http.Get("http://localhost:5000/liveness")
+		resp, err := pester.Get("http://localhost:5000/liveness")
 
 		if assert.Nil(t, err) {
 

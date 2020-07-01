@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/sethgrid/pester"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +16,7 @@ func TestInitLivenessAndReadiness(t *testing.T) {
 		// act
 		InitLivenessAndReadinessWithPort(5002)
 
-		resp, err := http.Get("http://localhost:5002/liveness")
+		resp, err := pester.Get("http://localhost:5002/liveness")
 
 		if assert.Nil(t, err) {
 

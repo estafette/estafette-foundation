@@ -2,9 +2,9 @@ package foundation
 
 import (
 	"io/ioutil"
-	"net/http"
 	"testing"
 
+	"github.com/sethgrid/pester"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +15,7 @@ func TestInitReadiness(t *testing.T) {
 		// act
 		InitReadinessWithPort(5001)
 
-		resp, err := http.Get("http://localhost:5001/readiness")
+		resp, err := pester.Get("http://localhost:5001/readiness")
 
 		if assert.Nil(t, err) {
 
