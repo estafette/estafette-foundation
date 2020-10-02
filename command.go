@@ -21,47 +21,22 @@ func HandleError(err error) {
 // RunCommand runs a full command string and replaces placeholders with the arguments; it logs a fatal on error
 // RunCommand("kubectl logs -l app=%v -n %v", app, namespace)
 func RunCommand(ctx context.Context, command string, args ...interface{}) {
-	err := RunCommandExtended(ctx, command, args...)
-	HandleError(err)
+	c, a := getSeparateCommandAndArgs(ctx, command, args)
+	RunCommandWithArgs(ctx, c, a)
 }
 
 // RunCommandExtended runs a full command string and replaces placeholders with the arguments; it returns an error if command execution failed
 // err := RunCommandExtended("kubectl logs -l app=%v -n %v", app, namespace)
 func RunCommandExtended(ctx context.Context, command string, args ...interface{}) error {
-	command = fmt.Sprintf(command, args...)
+	c, a := getSeparateCommandAndArgs(ctx, command, args)
+	return RunCommandWithArgsExtended(ctx, c, a)
+}
 
-	// trim spaces and de-dupe spaces in string
-	command = strings.ReplaceAll(command, "  ", " ")
-	command = strings.Trim(command, " ")
-
-	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "> %v"), command))
-
-	// split into actual command and arguments
-	commandArray := strings.Split(command, " ")
-
-	// remove empty items
-	var cleanedCommandArray []string
-	for _, str := range commandArray {
-		if str != "" {
-			cleanedCommandArray = append(cleanedCommandArray, str)
-		}
-	}
-
-	var c string
-	var a []string
-	if len(cleanedCommandArray) > 0 {
-		c = cleanedCommandArray[0]
-	}
-	if len(cleanedCommandArray) > 1 {
-		a = cleanedCommandArray[1:]
-	}
-
-	cmd := exec.CommandContext(ctx, c, a...)
-	cmd.Env = os.Environ()
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	return err
+// GetCommandOutput runs a full command string and replaces placeholders with the arguments; it returns the output as a string and an error if command execution failed
+// output, err := GetCommandOutput("kubectl logs -l app=%v -n %v", app, namespace)
+func GetCommandOutput(ctx context.Context, command string, args ...interface{}) (string, error) {
+	c, a := getSeparateCommandAndArgs(ctx, command, args)
+	return GetCommandWithArgsOutput(ctx, c, a)
 }
 
 // RunCommandWithArgs runs a single command and passes the arguments; it logs a fatal on error
@@ -81,6 +56,7 @@ func RunCommandWithArgsExtended(ctx context.Context, command string, args []stri
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
+
 	return err
 }
 
@@ -95,4 +71,34 @@ func GetCommandWithArgsOutput(ctx context.Context, command string, args []string
 	output, err := cmd.Output()
 
 	return string(output), err
+}
+
+func getSeparateCommandAndArgs(ctx context.Context, command string, args ...interface{}) (c string, a []string) {
+	command = fmt.Sprintf(command, args...)
+
+	// trim spaces and de-dupe spaces in string
+	command = strings.ReplaceAll(command, "  ", " ")
+	command = strings.Trim(command, " ")
+
+	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "> %v"), command))
+
+	// split into actual command and arguments
+	commandArray := strings.Split(command, " ")
+
+	// remove empty items
+	var cleanedCommandArray []string
+	for _, str := range commandArray {
+		if str != "" {
+			cleanedCommandArray = append(cleanedCommandArray, str)
+		}
+	}
+
+	if len(cleanedCommandArray) > 0 {
+		c = cleanedCommandArray[0]
+	}
+	if len(cleanedCommandArray) > 1 {
+		a = cleanedCommandArray[1:]
+	}
+
+	return
 }
