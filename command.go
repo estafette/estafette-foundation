@@ -73,7 +73,7 @@ func GetCommandWithArgsOutput(ctx context.Context, command string, args []string
 	return string(output), err
 }
 
-func getSeparateCommandAndArgs(ctx context.Context, command string, args ...interface{}) (c string, a []string) {
+func getSeparateCommandAndArgs(ctx context.Context, command string, args []interface{}) (c string, a []string) {
 	command = fmt.Sprintf(command, args...)
 
 	// trim spaces and de-dupe spaces in string
