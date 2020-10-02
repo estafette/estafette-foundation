@@ -55,6 +55,7 @@ func RunCommandWithArgsExtended(ctx context.Context, command string, args []stri
 	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
 	err := cmd.Run()
 
 	return err
@@ -67,8 +68,8 @@ func GetCommandWithArgsOutput(ctx context.Context, command string, args []string
 
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Env = os.Environ()
-	cmd.Stderr = os.Stderr
-	output, err := cmd.Output()
+
+	output, err := cmd.CombinedOutput()
 
 	return string(output), err
 }
