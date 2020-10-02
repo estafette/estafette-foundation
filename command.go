@@ -80,8 +80,6 @@ func getSeparateCommandAndArgs(ctx context.Context, command string, args ...inte
 	command = strings.ReplaceAll(command, "  ", " ")
 	command = strings.Trim(command, " ")
 
-	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "> %v"), command))
-
 	// split into actual command and arguments
 	commandArray := strings.Split(command, " ")
 
