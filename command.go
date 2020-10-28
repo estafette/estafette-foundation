@@ -19,35 +19,35 @@ func HandleError(err error) {
 }
 
 // RunCommand runs a full command string and replaces placeholders with the arguments; it logs a fatal on error
-// RunCommand("kubectl logs -l app=%v -n %v", app, namespace)
+// RunCommand(ctx, "kubectl logs -l app=%v -n %v", app, namespace)
 func RunCommand(ctx context.Context, command string, args ...interface{}) {
 	c, a := getSeparateCommandAndArgs(ctx, command, args)
 	RunCommandWithArgs(ctx, c, a)
 }
 
 // RunCommandExtended runs a full command string and replaces placeholders with the arguments; it returns an error if command execution failed
-// err := RunCommandExtended("kubectl logs -l app=%v -n %v", app, namespace)
+// err := RunCommandExtended(ctx, "kubectl logs -l app=%v -n %v", app, namespace)
 func RunCommandExtended(ctx context.Context, command string, args ...interface{}) error {
 	c, a := getSeparateCommandAndArgs(ctx, command, args)
 	return RunCommandWithArgsExtended(ctx, c, a)
 }
 
 // GetCommandOutput runs a full command string and replaces placeholders with the arguments; it returns the output as a string and an error if command execution failed
-// output, err := GetCommandOutput("kubectl logs -l app=%v -n %v", app, namespace)
+// output, err := GetCommandOutput(ctx, "kubectl logs -l app=%v -n %v", app, namespace)
 func GetCommandOutput(ctx context.Context, command string, args ...interface{}) (string, error) {
 	c, a := getSeparateCommandAndArgs(ctx, command, args)
 	return GetCommandWithArgsOutput(ctx, c, a)
 }
 
 // RunCommandWithArgs runs a single command and passes the arguments; it logs a fatal on error
-// RunCommandWithArgs("kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
+// RunCommandWithArgs(ctx, "kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
 func RunCommandWithArgs(ctx context.Context, command string, args []string) {
 	err := RunCommandWithArgsExtended(ctx, command, args)
 	HandleError(err)
 }
 
 // RunCommandWithArgsExtended runs a single command and passes the arguments; it returns an error if command execution failed
-// err := RunCommandWithArgsExtended("kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
+// err := RunCommandWithArgsExtended(ctx, "kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
 func RunCommandWithArgsExtended(ctx context.Context, command string, args []string) error {
 	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "> %v %v"), command, strings.Join(args, " ")))
 
@@ -62,12 +62,63 @@ func RunCommandWithArgsExtended(ctx context.Context, command string, args []stri
 }
 
 // GetCommandWithArgsOutput runs a single command and passes the arguments; it returns the output as a string and an error if command execution failed
-// output, err := GetCommandWithArgsOutput("kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
+// output, err := GetCommandWithArgsOutput(ctx, "kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
 func GetCommandWithArgsOutput(ctx context.Context, command string, args []string) (string, error) {
 	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "> %v %v"), command, strings.Join(args, " ")))
 
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Env = os.Environ()
+
+	output, err := cmd.CombinedOutput()
+
+	return string(output), err
+}
+
+// RunCommandInDirectory runs a full command string and replaces placeholders with the arguments from the specified directory; it logs a fatal on error
+// RunCommandInDirectory(ctx, "directory other than working dir", "kubectl logs -l app=%v -n %v", app, namespace)
+func RunCommandInDirectory(ctx context.Context, dir string, command string, args ...interface{}) {
+	c, a := getSeparateCommandAndArgs(ctx, command, args)
+	RunCommandInDirectoryWithArgs(ctx, dir, c, a)
+}
+
+// RunCommandInDirectoryExtended runs a full command string and replaces placeholders with the arguments from the specified directory; it returns an error if command execution failed
+// err := RunCommandInDirectoryExtended(ctx, "directory other than working dir", "kubectl logs -l app=%v -n %v", app, namespace)
+func RunCommandInDirectoryExtended(ctx context.Context, dir string, command string, args ...interface{}) error {
+	c, a := getSeparateCommandAndArgs(ctx, command, args)
+	return RunCommandInDirectoryWithArgsExtended(ctx, dir, c, a)
+}
+
+// RunCommandInDirectoryWithArgs runs a single command and passes the arguments from the specified directory; it logs a fatal on error
+// RunCommandInDirectoryWithArgs(ctx, "directory other than working dir", "kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
+func RunCommandInDirectoryWithArgs(ctx context.Context, dir string, command string, args []string) {
+	err := RunCommandInDirectoryWithArgsExtended(ctx, dir, command, args)
+	HandleError(err)
+}
+
+// RunCommandInDirectoryWithArgsExtended runs a single command and passes the arguments from the specified directory; it returns an error if command execution failed
+// err := RunCommandInDirectoryWithArgsExtended(ctx, "directory other than working dir", "kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
+func RunCommandInDirectoryWithArgsExtended(ctx context.Context, dir string, command string, args []string) error {
+	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "[%v] > %v %v"), dir, command, strings.Join(args, " ")))
+
+	cmd := exec.CommandContext(ctx, command, args...)
+	cmd.Env = os.Environ()
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Dir = dir
+
+	err := cmd.Run()
+
+	return err
+}
+
+// GetCommandWithArgsInDirectoryOutput runs a single command and passes the arguments from the specified directory; it returns the output as a string and an error if command execution failed
+// output, err := GetCommandWithArgsOutput(ctx, "directory other than working dir", "kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
+func GetCommandWithArgsInDirectoryOutput(ctx context.Context, dir string, command string, args []string) (string, error) {
+	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "[%v] > %v %v"), dir, command, strings.Join(args, " ")))
+
+	cmd := exec.CommandContext(ctx, command, args...)
+	cmd.Env = os.Environ()
+	cmd.Dir = dir
 
 	output, err := cmd.CombinedOutput()
 
