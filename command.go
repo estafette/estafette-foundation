@@ -111,6 +111,13 @@ func RunCommandInDirectoryWithArgsExtended(ctx context.Context, dir string, comm
 	return err
 }
 
+// GetCommandInDirectoryOutput runs a full command string and replaces placeholders with the arguments from the specified directory; it returns the output as a string and an error if command execution failed
+// output, err := GetCommandInDirectoryOutput(ctx, "directory other than working dir", "kubectl logs -l app=%v -n %v", app, namespace)
+func GetCommandInDirectoryOutput(ctx context.Context, dir string, command string, args ...interface{}) (string, error) {
+	c, a := getSeparateCommandAndArgs(ctx, command, args)
+	return GetCommandWithArgsInDirectoryOutput(ctx, dir, c, a)
+}
+
 // GetCommandWithArgsInDirectoryOutput runs a single command and passes the arguments from the specified directory; it returns the output as a string and an error if command execution failed
 // output, err := GetCommandWithArgsOutput(ctx, "directory other than working dir", "kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
 func GetCommandWithArgsInDirectoryOutput(ctx context.Context, dir string, command string, args []string) (string, error) {
