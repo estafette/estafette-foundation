@@ -147,6 +147,24 @@ func FileExists(filename string) bool {
 	return !info.IsDir()
 }
 
+// DirExists checks if a directory exists
+func DirExists(directory string) bool {
+	info, err := os.Stat(directory)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return info.IsDir()
+}
+
+// PathExists checks if a directory exists
+func PathExists(path string) bool {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 // StringArrayContains checks if an array contains a specific value
 func StringArrayContains(array []string, search string) bool {
 	for _, v := range array {

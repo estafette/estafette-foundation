@@ -83,3 +83,92 @@ func TestToLowerSnakeCase(t *testing.T) {
 		assert.Equal(t, "kubernetes_engine", snake)
 	})
 }
+
+func TestFileExists(t *testing.T) {
+
+	t.Run("ReturnsTrueIfFileExists", func(t *testing.T) {
+
+		// act
+		exists := FileExists("go.mod")
+
+		assert.True(t, exists)
+	})
+
+	t.Run("ReturnsFalseIfFileDoesNotExist", func(t *testing.T) {
+
+		// act
+		exists := FileExists("go.pub")
+
+		assert.False(t, exists)
+	})
+
+	t.Run("ReturnsFalseIfPathIsDirectory", func(t *testing.T) {
+
+		// act
+		exists := FileExists("..")
+
+		assert.False(t, exists)
+	})
+}
+
+func TestDirExists(t *testing.T) {
+
+	t.Run("ReturnsTrueIfDirExists", func(t *testing.T) {
+
+		// act
+		exists := DirExists("..")
+
+		assert.True(t, exists)
+	})
+
+	t.Run("ReturnsFalseIfDirDoesNotExist", func(t *testing.T) {
+
+		// act
+		exists := DirExists("vendor")
+
+		assert.False(t, exists)
+	})
+
+	t.Run("ReturnsFalseIfPathIsFile", func(t *testing.T) {
+
+		// act
+		exists := DirExists("go.mod")
+
+		assert.False(t, exists)
+	})
+}
+
+func TestPathExists(t *testing.T) {
+
+	t.Run("ReturnsTrueIfFileExists", func(t *testing.T) {
+
+		// act
+		exists := PathExists("go.mod")
+
+		assert.True(t, exists)
+	})
+
+	t.Run("ReturnsTrueIfDirExists", func(t *testing.T) {
+
+		// act
+		exists := PathExists("..")
+
+		assert.True(t, exists)
+	})
+
+	t.Run("ReturnsFalseIfDirDoesNotExist", func(t *testing.T) {
+
+		// act
+		exists := PathExists("vendor")
+
+		assert.False(t, exists)
+	})
+
+	t.Run("ReturnsFalseIfFileDoesNotExist", func(t *testing.T) {
+
+		// act
+		exists := PathExists("go.pub")
+
+		assert.False(t, exists)
+	})
+}
