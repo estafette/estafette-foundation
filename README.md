@@ -135,3 +135,30 @@ isRetryableErrorCustomOption := func(c *foundation.RetryConfig) {
 
 foundation.Retry(func() error { do something that can fail }, isRetryableErrorCustomOption)
 ```
+
+### Limit concurrency with a semaphore
+
+To run code in a loop concurrently with a maximum of simultanuous running goroutines do the following:
+
+```go
+import "github.com/estafette/estafette-foundation"
+
+// limit concurrency using a semaphore
+maxConcurrency := 5
+semaphore := foundation.NewSemaphore(maxConcurrency)
+
+for _, i := range items {
+  // try to acquire a lock, which only succeeds if there's less than maxConcurrency active goroutines
+  semaphore.Acquire()
+
+  go func(i Item) {
+    // release the lock when done with the slow task
+    defer semaphore.Release()
+
+    // do some slow work
+  }(i)
+}
+
+// wait until all concurrent goroutines are done
+semaphore.Wait()
+```
