@@ -162,3 +162,35 @@ for _, i := range items {
 // wait until all concurrent goroutines are done
 semaphore.Wait()
 ```
+
+If you want to run Acquire within a `select` statement do so as follows:
+
+```go
+import "github.com/estafette/estafette-foundation"
+
+// limit concurrency using a semaphore
+maxConcurrency := 5
+semaphore := foundation.NewSemaphore(maxConcurrency)
+
+for _, i := range items {
+  select {
+  case semaphore.GetAcquireChannel() <- struct{}{}:
+    // try to acquire a lock, which only succeeds if there's less than maxConcurrency active goroutines
+    semaphore.Acquire()
+
+    go func(i Item) {
+      // release the lock when done with the slow task
+      defer semaphore.Release()
+
+      // do some slow work
+    }(i)
+
+  case <-time.After(1 * time.Second):
+    // running the goroutines took to long, exit instead
+    return
+  }
+}
+
+// wait until all concurrent goroutines are done
+semaphore.Wait()
+```

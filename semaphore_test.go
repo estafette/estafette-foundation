@@ -54,4 +54,27 @@ func TestSemaphore(t *testing.T) {
 		semaphore.Wait()
 
 	})
+
+	t.Run("RunsWithAcquireInSelect", func(t *testing.T) {
+
+		semaphore := NewSemaphore(5)
+
+		for i := 0; i < 5; i++ {
+			select {
+			case semaphore.GetAcquireChannel() <- struct{}{}:
+				go func(i int) {
+					defer semaphore.Release()
+
+					log.Info().Msgf("Running semaphore test goroutine %v...", i)
+					time.Sleep(100 * time.Millisecond)
+				}(i)
+
+			case <-time.After(1 * time.Second):
+				return
+			}
+		}
+
+		semaphore.Wait()
+	})
+
 }
