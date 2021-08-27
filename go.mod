@@ -1,6 +1,6 @@
 module github.com/estafette/estafette-foundation
 
-go 1.12
+go 1.17
 
 require (
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
@@ -24,4 +24,13 @@ require (
 	golang.org/x/sys v0.0.0-20200331124033-c3d80250170d // indirect
 	golang.org/x/tools v0.0.0-20200331025713-a30bf2db82d4 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
+)
+
+require (
+	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/pkg/errors v0.8.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	gopkg.in/yaml.v2 v2.2.2 // indirect
 )
