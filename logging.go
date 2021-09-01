@@ -228,6 +228,10 @@ func initLoggingV3(applicationInfo ApplicationInfo) {
 
 	// Have the error message under and object in "error" instead of in a raw string.
 	zerolog.ErrorMarshalFunc = func(err error) interface{} {
+		if err == nil {
+			return nil
+		}
+
 		return v3Error{err.Error()}
 	}
 
