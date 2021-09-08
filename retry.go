@@ -88,12 +88,12 @@ func ExponentialJitterBackoffDelay(n uint, config *RetryConfig) time.Duration {
 
 // ExponentialBackOffDelay is a DelayType which increases delay between consecutive retries exponentially
 func ExponentialBackOffDelay(n uint, config *RetryConfig) time.Duration {
-	return time.Duration(config.DelayMillisecond) * (1 << n)
+	return time.Duration(config.DelayMillisecond) * time.Millisecond * (1 << n)
 }
 
 // FixedDelay is a DelayType which keeps delay the same through all iterations
 func FixedDelay(_ uint, config *RetryConfig) time.Duration {
-	return time.Duration(config.DelayMillisecond)
+	return time.Duration(config.DelayMillisecond) * time.Millisecond
 }
 
 // IsRetryableErrorFunc allows to apply custom logic to whether an error is retryable
