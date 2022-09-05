@@ -1,6 +1,7 @@
 package foundation
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -109,6 +110,32 @@ func RunCommandInDirectoryWithArgsExtended(ctx context.Context, dir string, comm
 	err := cmd.Run()
 
 	return err
+}
+
+// RunCommandInDirectoryExtended runs a full command string and replaces placeholders with the arguments from the specified directory; it returns an error combined stderr if command execution failed
+// err := RunCommandInDirectoryExtended(ctx, "directory other than working dir", "kubectl logs -l app=%v -n %v", app, namespace)
+func RunCommandInDirectoryExtendedCombinedStdErr(ctx context.Context, dir string, command string, args ...interface{}) error {
+	c, a := getSeparateCommandAndArgs(ctx, command, args)
+	return RunCommandInDirectoryWithArgsExtendedCombinedStdErr(ctx, dir, c, a)
+}
+
+// RunCommandInDirectoryWithArgsExtended runs a single command and passes the arguments from the specified directory; it returns an error combined stderr if command execution failed
+// err := RunCommandInDirectoryWithArgsExtended(ctx, "directory other than working dir", "kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
+func RunCommandInDirectoryWithArgsExtendedCombinedStdErr(ctx context.Context, dir string, command string, args []string) error {
+	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "[%v] > %v %v"), dir, command, strings.Join(args, " ")))
+
+	cmd := exec.CommandContext(ctx, command, args...)
+	cmd.Env = os.Environ()
+	cmd.Stdout = os.Stdout
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	cmd.Dir = dir
+
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("%s: %s", err, stderr.String())
+	}
+	return nil
 }
 
 // GetCommandInDirectoryOutput runs a full command string and replaces placeholders with the arguments from the specified directory; it returns the output as a string and an error if command execution failed
