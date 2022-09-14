@@ -33,6 +33,13 @@ func RunCommandExtended(ctx context.Context, command string, args ...interface{}
 	return RunCommandWithArgsExtended(ctx, c, a)
 }
 
+// RunCommandExtended runs a full command string and replaces placeholders with the arguments; it returns an error combined stderr if command execution failed
+// err := RunCommandExtended(ctx, "kubectl logs -l app=%v -n %v", app, namespace)
+func RunCommandExtendedCombinedStdErr(ctx context.Context, command string, args ...interface{}) error {
+	c, a := getSeparateCommandAndArgs(ctx, command, args)
+	return RunCommandWithArgsExtendedCombinedStdErr(ctx, c, a)
+}
+
 // GetCommandOutput runs a full command string and replaces placeholders with the arguments; it returns the output as a string and an error if command execution failed
 // output, err := GetCommandOutput(ctx, "kubectl logs -l app=%v -n %v", app, namespace)
 func GetCommandOutput(ctx context.Context, command string, args ...interface{}) (string, error) {
@@ -60,6 +67,25 @@ func RunCommandWithArgsExtended(ctx context.Context, command string, args []stri
 	err := cmd.Run()
 
 	return err
+}
+
+// RunCommandWithArgsExtendedCombinedStdErr runs a single command and passes the arguments; it returns an error combined stderr if command execution failed
+// err := RunCommandWithArgsExtended(ctx, "kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
+func RunCommandWithArgsExtendedCombinedStdErr(ctx context.Context, command string, args []string) error {
+	log.Debug().Msg(aurora.Sprintf(aurora.Gray(18, "> %v %v"), command, strings.Join(args, " ")))
+
+	cmd := exec.CommandContext(ctx, command, args...)
+	cmd.Env = os.Environ()
+	cmd.Stdout = os.Stdout
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("%s: %s", err, stderr.String())
+	}
+
+	return nil
 }
 
 // GetCommandWithArgsOutput runs a single command and passes the arguments; it returns the output as a string and an error if command execution failed
