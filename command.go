@@ -212,3 +212,23 @@ func getSeparateCommandAndArgs(ctx context.Context, command string, args []inter
 
 	return
 }
+
+// RunCommandWithArgsWithoutLog runs a single command and passes the arguments; it logs a fatal on error without any log output
+// RunCommandWithArgsWithoutLog(ctx, "kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
+func RunCommandWithArgsWithoutLog(ctx context.Context, command string, args []string) {
+	err := RunCommandWithArgsExtendedWithoutLog(ctx, command, args)
+	HandleError(err)
+}
+
+// RunCommandWithArgsExtendedWithoutLog runs a single command and passes the arguments; it returns an error if command execution failed without any log output
+// err := RunCommandWithArgsExtendedWithoutLog(ctx, "kubectl", []string{"logs", "-l", "app="+app, "-n", namespace)
+func RunCommandWithArgsExtendedWithoutLog(ctx context.Context, command string, args []string) error {
+	cmd := exec.CommandContext(ctx, command, args...)
+	cmd.Env = os.Environ()
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err := cmd.Run()
+
+	return err
+}
